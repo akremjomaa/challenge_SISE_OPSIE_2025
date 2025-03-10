@@ -1,16 +1,36 @@
-# the main application file
+import os
+import sys
+import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+from streamlit_option_menu import option_menu
 
-def main():
-    """Interface principale."""
-    st.set_page_config(
-        page_title="Analyse des logs",
-        layout="wide",
+# Menu latéral
+with st.sidebar:
+    page = option_menu(
+        menu_title="Navigation",
+        options=["Accueil","Données","Dashboard","Statistiques"],
+        default_index=0,
+        icons=["house","chart-line","dashboard","graph-up"]
     )
 
-    # hello world
-    st.write("Hello, world!")
 
 
-if __name__ == "__main__":
-    main()
+# Chargement des pages
+if page == "Accueil":
+    st.title("Accueil")
+    st.write("test_accueil")
+
+elif page == "Données":
+    st.title("Données")
+    st.write("test_page1")
+
+elif page == "Dashboard":
+    st.title("Dashboard")
+    st.write("test_page2")
+
+elif page == "Statistiques":
+    st.title("Statistiques")
+    st.write("test_page3")
