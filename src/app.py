@@ -10,12 +10,13 @@ from visualization.analyze_flux import show_flux_analysis
 from visualization.data_table import show_data_table
 from visualization.ip_analysis import show_ip_analysis
 from visualization.stats_summary import show_stats
+from visualization.clusters import show_clusters
 
 # Menu latéral
 with st.sidebar:
     page = option_menu(
         menu_title="Navigation",
-        options=["Tableau des Logs","Analyse des Flux", "Visualisation IPs", "Statistiques"],
+        options=["Tableau des Logs","Analyse des Flux", "Visualisation IPs", "Statistiques", "clusters"],
         default_index=0,
         icons=["house","chart-line","dashboard","graph-up"]
     )
@@ -26,7 +27,11 @@ if page == "Analyse des Flux":
     show_flux_analysis()
 elif page == "Tableau des Logs":
     show_data_table()
+    pass
 elif page == "Visualisation IPs":
     show_ip_analysis()
+    pass
+elif page == "clusters":
+    show_clusters()
 else:
     show_stats()
