@@ -11,3 +11,5 @@ venv/
 # Ignorer les fichiers temporaires de l'éditeur
 .vscode/
 .idea/
+
+data/
