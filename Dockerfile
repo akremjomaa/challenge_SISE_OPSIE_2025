@@ -4,21 +4,23 @@ FROM python:3.9
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de configuration
+# Copier les fichiers nécessaires
 COPY requirements.txt .
-COPY config.py .
-
-# Copier tous les fichiers du dossier "src"
-COPY src/ /app/src/
-
-# Copier les fichiers de données 
-COPY data/ /app/data/
-
+COPY config.py .  
+COPY config.py /app/src/  
 # Installer les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Exposer le port 8501 (port par défaut de Streamlit)
+# Copier le reste des fichiers
+COPY src/ /app/src/
+COPY data/ /app/data/
+
+# Ajouter un utilisateur non-root pour la sécurité
+RUN useradd -m appuser
+USER appuser
+
+# Exposer le port 8501 pour Streamlit
 EXPOSE 8501
 
-# Définir le point d'entrée pour exécuter l'application
-CMD ["streamlit", "run", "src/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Démarrer l'application
+CMD ["streamlit", "run", "/app/src/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

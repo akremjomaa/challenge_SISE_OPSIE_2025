@@ -42,7 +42,7 @@ def classify_ip(ip):
         return "Inconnu"  # Gestion des erreurs si l'IP est mal formatée
 
 def show_flux_analysis():
-    st.title("📊 Analyse des Flux TCP/UDP (Avec Filtrage RFC 6056)")
+    st.title("📊 Analyse des Flux TCP/UDP (Avec Heatmap et Origine des DENY)")
 
     # 📌 Charger les données une seule fois grâce au cache
     df = load_data()
@@ -92,25 +92,50 @@ def show_flux_analysis():
 
     if df_deny.empty:
         st.info("✔ Aucun flux rejeté (DENY) dans cette plage de ports.")
-        return
+    else:
+        # Classifier les IPs sources
+        df_deny["ip_type"] = df_deny["source_ip"].apply(classify_ip)
 
-    # Classifier les IPs sources
-    df_deny["ip_type"] = df_deny["source_ip"].apply(classify_ip)
+        # Compter les connexions `DENY` internes vs externes
+        deny_counts = df_deny["ip_type"].value_counts().reset_index()
+        deny_counts.columns = ["Type d'IP", "Nombre de Connexions `DENY`"]
 
-    # Compter les connexions `DENY` internes vs externes
-    deny_counts = df_deny["ip_type"].value_counts().reset_index()
-    deny_counts.columns = ["Type d'IP", "Nombre de Connexions `DENY`"]
+        # 📌 Affichage en camembert des connexions rejetées
+        fig_deny = px.pie(
+            deny_counts,
+            names="Type d'IP",
+            values="Nombre de Connexions `DENY`",
+            title=f"🌍 Répartition des Connexions `DENY` ({selected_range})",
+            color="Type d'IP",
+            color_discrete_map={"Interne": "blue", "Externe": "red", "Inconnu": "gray"}
+        )
+        st.plotly_chart(fig_deny, use_container_width=True)
 
-    # 📌 Affichage en camembert des connexions rejetées
-    fig_deny = px.pie(
-        deny_counts,
-        names="Type d'IP",
-        values="Nombre de Connexions `DENY`",
-        title=f"🌍 Répartition des Connexions `DENY` ({selected_range})",
-        color="Type d'IP",
-        color_discrete_map={"Interne": "blue", "Externe": "red", "Inconnu": "gray"}
+    # 📌 **Nouvelle section : Heatmap des Connexions par Heure et IP Source**
+    st.write("### 🔥 Heatmap des Connexions par Heure et IP Source")
+
+    # Extraction de l'heure depuis le timestamp
+    df_filtered["hour"] = df_filtered["timestamp"].dt.hour
+
+    # Limiter aux `Top 10` IPs les plus actives pour éviter une heatmap illisible
+    top_ips = df_filtered["source_ip"].value_counts().nlargest(10).index
+    df_heatmap = df_filtered[df_filtered["source_ip"].isin(top_ips)]
+
+    # Grouper les connexions par IP source et heure
+    heatmap_data = df_heatmap.groupby(["hour", "source_ip"]).size().reset_index(name="Nombre de Connexions")
+
+    # 📌 Affichage de la Heatmap avec `Plotly`
+    fig_heatmap = px.density_heatmap(
+        heatmap_data,
+        x="hour",
+        y="source_ip",
+        z="Nombre de Connexions",
+        color_continuous_scale="reds",
+        title="⏰ Heatmap des Connexions par Heure et IP Source",
+        labels={"hour": "Heure (0-23)", "source_ip": "IP Source", "Nombre de Connexions": "Nombre de Flux"}
     )
-    st.plotly_chart(fig_deny, use_container_width=True)
+    
+    st.plotly_chart(fig_heatmap, use_container_width=True)
 
 if __name__ == "__main__":
     show_flux_analysis()

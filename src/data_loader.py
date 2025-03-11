@@ -1,43 +1,4 @@
-# # src/data_loader.py
-
-# import os
-# import pandas as pd
-# from config import LOG_FILE, CLEANED_FILE_PATH
-
-# # Vérifier si le fichier brut existe
-# if not os.path.exists(LOG_FILE):
-#     raise FileNotFoundError(f"Le fichier brut {LOG_FILE} est introuvable ! Vérifie son emplacement.")
-
-# def clean_and_save_logs():
-#     """Charge, nettoie et sauvegarde les logs au format structuré."""
-
-#     # Charger le fichier brut
-#     df = pd.read_csv(LOG_FILE, encoding="utf-8")
-
-#     # Renommer les colonnes pour correspondre aux attentes
-#     df.columns = [
-#         "source_ip", "destination_ip", "destination_port", "protocol", "action", "date", "rule_id"
-#     ]
-
-#     # Convertir la colonne "date" en datetime
-#     df["date"] = pd.to_datetime(df["date"])
-#     # Ajouter des colonnes manquantes avec des valeurs par défaut
-#     df["interface_in"] = "Unknown"  # Interface d’entrée inconnue
-#     df["interface_out"] = "Unknown"  # Interface de sortie inconnue
-
-#     # Vérification des types de données après transformation
-#     print(df.info())
-
-#     # Sauvegarder les données nettoyées
-#     df.to_csv(CLEANED_FILE_PATH, index=False)
-#     print(f"✅ Données nettoyées enregistrées dans {CLEANED_FILE_PATH}")
-
-# if __name__ == "__main__":
-#     clean_and_save_logs()
-
-
 #src/data_loader.py
-
 import os
 import pandas as pd
 from config import LOG_FILE, CLEANED_FILE_PATH
