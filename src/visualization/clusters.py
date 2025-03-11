@@ -8,12 +8,14 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import pickle
+from config import LOG_FILE
+
 
 # 📌 Charger les données et les mettre en cache
 @st.cache_data
 def load_data():
     """Charge et met en cache les logs Firewall depuis un fichier Parquet."""
-    return pd.read_parquet("/Users/yac/Downloads/log_export.parquet", engine="pyarrow")
+    return pd.read_parquet(LOG_FILE, engine="pyarrow")
 
 def show_clusters():
     # 📌 Charger les données
@@ -35,13 +37,13 @@ def show_clusters():
     k = st.slider("Choisissez le nombre de clusters (k)", min_value=2, max_value=4, value=3)
 
     if k == 2:
-        with open("/Users/yac/Downloads/kmeans_num_k_2.pkl", "rb") as f:
+        with open("../models/kmeans_num_k_2.pkl", "rb") as f:
             kmeans = pickle.load(f)
     elif k == 3:
-        with open("/Users/yac/Downloads/kmeans_num_k_3.pkl", "rb") as f:
+        with open("../models/kmeans_num_k_3.pkl", "rb") as f:
             kmeans = pickle.load(f)
     else:
-        with open("/Users/yac/Downloads/kmeans_num_k_4.pkl", "rb") as f:
+        with open("../models/kmeans_num_k_4.pkl", "rb") as f:
             kmeans = pickle.load(f)
 
     # Define sample size

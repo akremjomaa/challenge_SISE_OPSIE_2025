@@ -1,8 +1,9 @@
-# visualization/analyze_flux.py
+# 📌 visualization/analyze_flux.py
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import ipaddress  # Module pour manipuler les adresses IP
 from config import CLEANED_FILE_PATH
 
 # 🔹 Définition des plages de ports selon la RFC 6056
@@ -25,6 +26,21 @@ def filter_by_port_range(df, port_range):
     min_port, max_port = PORT_RANGES[port_range]
     return df[(df["destination_port"] >= min_port) & (df["destination_port"] <= max_port)]
 
+# 📌 Fonction pour détecter si une IP est interne ou externe
+def classify_ip(ip):
+    """Classifie une IP comme Interne ou Externe."""
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        if (
+            ip_obj.is_private  # Vérifie si l'IP est dans un réseau privé
+            or ip_obj.is_loopback  # Vérifie si c'est une adresse de loopback (127.0.0.1)
+        ):
+            return "Interne"
+        else:
+            return "Externe"
+    except ValueError:
+        return "Inconnu"  # Gestion des erreurs si l'IP est mal formatée
+
 def show_flux_analysis():
     st.title("📊 Analyse des Flux TCP/UDP (Avec Filtrage RFC 6056)")
 
@@ -34,7 +50,7 @@ def show_flux_analysis():
     # 📌 Sélection de la plage de ports à analyser
     selected_range = st.selectbox("📌 Sélectionnez une plage de ports :", list(PORT_RANGES.keys()))
 
-    # 📌 Filtrer les données selon la plage de ports sélectionnée (optimisé avec `st.cache_data`)
+    # 📌 Filtrer les données selon la plage de ports sélectionnée
     df_filtered = filter_by_port_range(df, selected_range)
 
     # 📌 Vérifier si des données sont disponibles après filtrage
@@ -49,14 +65,14 @@ def show_flux_analysis():
     # 📌 Compter les flux TCP/UDP autorisés et rejetés
     protocol_action_counts = df_filtered.groupby(["protocol", "action"]).size().unstack(fill_value=0)
 
-    # ✅ Correction : Réindexation explicite pour s'assurer que PERMIT et DENY sont bien ordonnés
+    # ✅ Réindexation explicite pour garantir que "PERMIT" et "DENY" sont bien présents
     for col in ["PERMIT", "DENY"]:
         if col not in protocol_action_counts.columns:
-            protocol_action_counts[col] = 0  # Ajout d'une colonne manquante pour éviter les erreurs
+            protocol_action_counts[col] = 0  # Ajout d'une colonne manquante
 
     protocol_action_counts = protocol_action_counts[["PERMIT", "DENY"]]  # Assurer l'ordre correct
 
-    # 🔹 Affichage avec `Plotly` pour améliorer l’interactivité
+    # 🔹 Affichage graphique des flux `PERMIT` vs `DENY`
     fig = px.bar(
         protocol_action_counts,
         x=protocol_action_counts.index,
@@ -66,8 +82,35 @@ def show_flux_analysis():
         barmode="stack",
         color_discrete_map={"PERMIT": "green", "DENY": "red"}
     )
-
     st.plotly_chart(fig, use_container_width=True)
+
+    # 📌 **Nouvelle section : Analyser l'origine des connexions `DENY` (Interne vs Externe)**
+    st.write("### 🔍 Origine des Connexions `DENY` (Interne vs Externe)")
+
+    # Filtrer uniquement les connexions `DENY`
+    df_deny = df_filtered[df_filtered["action"] == "DENY"].copy()
+
+    if df_deny.empty:
+        st.info("✔ Aucun flux rejeté (DENY) dans cette plage de ports.")
+        return
+
+    # Classifier les IPs sources
+    df_deny["ip_type"] = df_deny["source_ip"].apply(classify_ip)
+
+    # Compter les connexions `DENY` internes vs externes
+    deny_counts = df_deny["ip_type"].value_counts().reset_index()
+    deny_counts.columns = ["Type d'IP", "Nombre de Connexions `DENY`"]
+
+    # 📌 Affichage en camembert des connexions rejetées
+    fig_deny = px.pie(
+        deny_counts,
+        names="Type d'IP",
+        values="Nombre de Connexions `DENY`",
+        title=f"🌍 Répartition des Connexions `DENY` ({selected_range})",
+        color="Type d'IP",
+        color_discrete_map={"Interne": "blue", "Externe": "red", "Inconnu": "gray"}
+    )
+    st.plotly_chart(fig_deny, use_container_width=True)
 
 if __name__ == "__main__":
     show_flux_analysis()
